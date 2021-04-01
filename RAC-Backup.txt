@@ -4,6 +4,7 @@ Connect to the database.
 sqlplus / as sysdba
 
 Check the database log mode.
+
 SQL> select NAME,LOG_MODE from v$database;
 
 The following information is displayed:
@@ -11,15 +12,21 @@ The following information is displayed:
 NAME       LOG_MODE  
 ---------- ------------  
 ora11g     ARCHIVELOG
+
 When LOG_MODE is ARCHIVELOG, skip the following steps and directly perform operations in Configuring the Directory for Storing Archive Logs.
+
 When LOG_MODE is NOARCHIVELOG, perform the following steps to open the archive log.
+
 Run the command on both nodes of Oracle database to modify archive log file format parameters.
+
 SQL> alter system set log_archive_format='%t_%s_%r.dbf' scope=spfile;
 
 Run the command on both nodes of Oracle database to close all database instances.
+
 SQL>shutdown immediate;
 
 Run the following commands on only one node to set the database to work in ARCHIVELOG mode.
+
 SQL>startup mount;
 
 SQL>alter database archivelog;
@@ -27,6 +34,7 @@ SQL>alter database archivelog;
 SQL>alter database open;
 
 Verify that the database log mode is ARCHIVELOG.
+
 SQL> select NAME,LOG_MODE from v$database;
 
 The following information is displayed:
@@ -34,10 +42,13 @@ The following information is displayed:
 NAME      LOG_MODE  
 --------- ------------  
 ora11g    ARCHIVELOG
+
 Run the following command on other the node to open database instances:
+
 SQL>startup;
 
 Exit the database.
+
 SQL> exit
 
 Configuring the Directory for Storing Archive Logs
@@ -45,9 +56,11 @@ You need to configure the directory for storing archive logs on both nodes of Or
 
 Log in to the database server as the oracle user. The default password of the oracle user is Change_Me.
 Connect to the database.
+
 sqlplus / as sysdba
 
 Check whether the directory for storing archive logs is correctly set.
+
 SQL> show parameter log_archive_dest;
 
 Information similar to the following is displayed:
@@ -57,7 +70,7 @@ NAME                  TYPE      VALUE
 log_archive_dest      string  
 log_archive_dest_1    string    LOCATION=+DG_ARCHIVE     
 log_archive_dest_10   string  
-……
+
 SQL> show parameter log_archive_duplex_dest;
 
 Information similar to the following is displayed:
@@ -68,17 +81,21 @@ log_archive_duplex_dest      string
 
 
 Modify the directory for storing archive logs.
+
 SQL> alter system set log_archive_dest_1='LOCATION=+DG_ARCHIVE' scope=spfile;
 
 Restart database instances.
+
 SQL> shutdown immediate;
 
 SQL> startup;
 
 Verify the directory for storing archive logs is correctly set.
+
 SQL> show parameter log_archive_dest_1;
 
 Exit the database.
+
 SQL> exit
 
 Configuring Automatic Backup of Control Files
@@ -86,9 +103,11 @@ You need to configure automatic backup of control files on both nodes of Oracle 
 
 Log in to the database server as the oracle user. The default password of the oracle user is Change_Me.
 Log in to the RMAN.
+
 rman target / nocatalog
 
 View the default parameter settings of the RMAN.
+
 RMAN> show all;
 
 Information similar to the following is displayed:
@@ -103,9 +122,11 @@ CONFIGURE CONTROLFILE AUTOBACKUP FORMAT FOR DEVICE TYPE DISK TO '%F'; # default
 CONFIGURE CONTROLFILE AUTOBACKUP OFF indicates that control files are not automatically backed up. Run the following command to configure control files to be automatically backed up:
 
 Set a local directory for storing automatically backed up control files.
+
 RMAN> CONFIGURE CONTROLFILE AUTOBACKUP FORMAT FOR DEVICE TYPE DISK TO '+DG_ARCHIVE/controlfile_%F';
 
 Verify the configuration.
+
 RMAN> show all;
 
 Information similar to the following is displayed:
@@ -120,12 +141,15 @@ CONFIGURE CONTROLFILE AUTOBACKUP FORMAT FOR DEVICE TYPE DISK TO '+DG_ARCHIVE/con
 Modify the directory for storing control file snapshots generated.
  
 If an ASM directory is used, run the following command:
+
 RMAN> CONFIGURE SNAPSHOT CONTROLFILE NAME TO '+DG_ORA/snapcf_DBNAME.f';
 
 If a shared directory is used, run the following command:
+
 RMAN> CONFIGURE SNAPSHOT CONTROLFILE NAME TO 'Shared directory/snapcf_DBNAME.f';
 
 Exit the RMAN.
+
 RMAN> exit
 
 Performing the Backup
@@ -133,28 +157,34 @@ Perform 1 to 4 on both nodes of Oracle database to create the backup files. Then
 
 Log in to the database server as the oracle user. The default password of the oracle user is Change_Me.
 Create directories for storing backup files.
+
 cd /opt/oracle/
 
 mkdir backup
 
 Create the backup_oracle.sh script file in the directory for storing backup files.
 Create a backup script file.
+
 cd /opt/oracle/backup
 
 vi backup_oracle.sh
 
 Press i to enter the editing mode and copy the following content to the script file:
+
 #!/bin/ksh  
 log="/opt/oracle/backup/backup_db.log"  
 if [ -f $log ]  
 then  
    rm  -f $log  
 fi  
+
 ##########Obtain the instance number of current instance########## 
+
 instnum="SELECT INSTANCE_NUMBER FROM V\$INSTANCE"  
 resultnum=`echo "set echo off\nset feedback off\nset heading off\nset newpage 0\nset pagesize 0\n$instnum;\nexit;\n"|sqlplus -s / as sysdba`  
 
 ##########Obtain the total number of the instances########## 
+
 instcount="SELECT COUNT(*) FROM GV\$INSTANCE" 
 resultcount=`echo "set echo off\nset feedback off\nset heading off\nset newpage 0\nset pagesize 0\n$instcount;\nexit;\n"|sqlplus -s / as sysdba`                        
 
@@ -169,15 +199,21 @@ if [ $resultnum -eq 1 ]
     else        
       exit 
 fi 
+
 Press Esc to exit the editing mode and run the :wq command to save the file and exit.
+
 Grant the execute permission on the script file.
+
 chmod 700 backup_oracle.sh
 
 Create the backup_oracle.cmd script in the directory for storing backup commands.
+
 Create a backup command file.
+
 vi backup_oracle.cmd
 
 Press i to enter the editing mode and copy the following content to the script file:
+
 run {  
 allocate channel t1 type disk;  
 allocate channel t2 type disk;  
@@ -192,6 +228,9 @@ delete noprompt obsolete;
 release CHANNEL t1;  
 release CHANNEL t2;  
 }
+
 Press Esc to exit the editing mode and run the :wq command to save the file and exit.
+
 Run the following command in the /opt/oracle/backup directory to perform the backup.
+
 ./backup_oracle.sh
